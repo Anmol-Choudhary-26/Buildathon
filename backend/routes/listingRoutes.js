@@ -1,13 +1,13 @@
 const router = require('express').Router();
 const c = require('../controllers/listingController');
 const { requireAuth, hasRole } = require('../middleware/auth');
-const { upload } = require('../middleware/upload');
 router.use(requireAuth);
 router.get('/', c.list);
 router.get('/geocode', c.geocode);
 router.get('/mine', hasRole('Host', 'Both'), c.mine);
 router.post('/', hasRole('Host', 'Both'), c.create);
-router.post('/:id/media', hasRole('Host', 'Both'), upload.array('media', 8), c.uploadMedia);
+router.post('/:id/media/sign-upload', hasRole('Host', 'Both'), c.signMediaUploads);
+router.post('/:id/media/complete', hasRole('Host', 'Both'), c.completeMediaUploads);
 router.patch('/:id', hasRole('Host', 'Both'), c.update);
 router.delete('/:id', hasRole('Host', 'Both'), c.remove);
 module.exports = router;

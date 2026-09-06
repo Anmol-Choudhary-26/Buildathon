@@ -9,11 +9,12 @@ function getStorage() {
   return client.storage.from(bucket);
 }
 
-async function uploadMedia(path, file) {
+async function createSignedUpload(path) {
   const storage = getStorage();
   if (!storage) throw new Error('Supabase Storage is not configured.');
-  const { error } = await storage.upload(path, file.buffer, { contentType: file.mimetype, cacheControl: '3600', upsert: false });
-  if (error) throw new Error(`Media upload failed: ${error.message}`);
+  const { data, error } = await storage.createSignedUploadUrl(path, { upsert: false });
+  if (error) throw new Error(`Could not prepare media upload: ${error.message}`);
+  return { path, token: data.token };
 }
 
 async function signedUrl(path) {
@@ -31,4 +32,4 @@ async function removeMedia(paths) {
   if (error) throw new Error(`Could not remove property media: ${error.message}`);
 }
 
-module.exports = { bucket, getStorage, uploadMedia, signedUrl, removeMedia };
+module.exports = { bucket, getStorage, createSignedUpload, signedUrl, removeMedia };

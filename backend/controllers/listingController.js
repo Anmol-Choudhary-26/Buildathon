@@ -1,8 +1,7 @@
 const Listing = require('../models/Listing');
 const ConnectionRequest = require('../models/ConnectionRequest');
 const { listingProximity, distanceKm, estimatedRoadKm, knownAreaLocation } = require('../utils/proximity');
-const { mediaType } = require('../middleware/upload');
-const { getStorage, uploadMedia, signedUrl, removeMedia } = require('../utils/supabaseStorage');
+const { getStorage, createSignedUpload, signedUrl, removeMedia } = require('../utils/supabaseStorage');
 const crypto = require('crypto');
 const path = require('path');
 
@@ -74,20 +73,43 @@ exports.remove = async (req, res, next) => {
     res.status(204).end();
   } catch (error) { next(error); }
 };
-exports.uploadMedia = async (req, res, next) => {
+const allowedMedia = new Map([
+  ['image/jpeg', { extension: '.jpg', type: 'image' }], ['image/png', { extension: '.png', type: 'image' }],
+  ['image/webp', { extension: '.webp', type: 'image' }], ['video/mp4', { extension: '.mp4', type: 'video' }],
+  ['video/webm', { extension: '.webm', type: 'video' }]
+]);
+const maxMediaBytes = 30 * 1024 * 1024;
+
+exports.signMediaUploads = async (req, res, next) => {
   try {
     if (!getStorage()) return res.status(503).json({ message: 'Media storage is not configured. Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY on the server.' });
     const listing = await Listing.findById(req.params.id);
     if (!listing) return res.status(404).json({ message: 'Property not found.' });
     if (!sameId(listing.hostId, req.user._id)) return res.status(403).json({ message: 'Only the property poster can add media.' });
-    if (!req.files?.length) return res.status(400).json({ message: 'Upload at least one JPG, PNG, WebP, MP4, or WebM file.' });
-    const files = await Promise.all(req.files.map(async file => {
-      const extension = path.extname(file.originalname).toLowerCase() || (mediaType(file.mimetype) === 'image' ? '.jpg' : '.mp4');
+    const files = Array.isArray(req.body.files) ? req.body.files : [];
+    if (!files.length || files.length > 8 || listing.media.length + files.length > 8) return res.status(400).json({ message: 'Choose up to 8 total JPG, PNG, WebP, MP4, or WebM files.' });
+    const uploads = await Promise.all(files.map(async file => {
+      const details = allowedMedia.get(file?.type);
+      if (!details || !Number.isFinite(file.size) || file.size < 1 || file.size > maxMediaBytes) throw new Error('Each media file must be an approved format and no larger than 30 MB.');
+      const suppliedExtension = path.extname(String(file.name || '')).toLowerCase();
+      const extension = suppliedExtension === details.extension ? suppliedExtension : details.extension;
       const storagePath = `hosts/${req.user._id}/listings/${listing._id}/${crypto.randomUUID()}${extension}`;
-      await uploadMedia(storagePath, file);
-      return { storagePath, type: mediaType(file.mimetype) };
+      const signed = await createSignedUpload(storagePath);
+      return { ...signed, type: details.type, contentType: file.type };
     }));
-    listing.media.push(...files);
+    res.json({ uploads });
+  } catch (error) { next(error); }
+};
+
+exports.completeMediaUploads = async (req, res, next) => {
+  try {
+    const listing = await Listing.findById(req.params.id);
+    if (!listing) return res.status(404).json({ message: 'Property not found.' });
+    if (!sameId(listing.hostId, req.user._id)) return res.status(403).json({ message: 'Only the property poster can add media.' });
+    const media = Array.isArray(req.body.media) ? req.body.media : [];
+    const prefix = `hosts/${req.user._id}/listings/${listing._id}/`;
+    if (!media.length || media.length > 8 || listing.media.length + media.length > 8 || media.some(asset => !asset?.storagePath?.startsWith(prefix) || !['image', 'video'].includes(asset.type))) return res.status(400).json({ message: 'Invalid media upload confirmation.' });
+    listing.media.push(...media.map(({ storagePath, type }) => ({ storagePath, type })));
     await listing.save();
     const response = await withMediaUrls(listing);
     res.status(201).json({ media: response.media });

@@ -34,7 +34,7 @@ Run `npm test` for encryption and credential-security tests, and `npm --prefix f
 
 The repository includes [vercel.json](D:\xzx\Buildathon\vercel.json), a Vercel serverless entry point, and a cached MongoDB connection. Import the repository into Vercel (or run `vercel` from the project root), then configure these production environment variables: `MONGODB_URI`, `JWT_SECRET`, `PII_ENCRYPTION_KEY`, `PII_LOOKUP_KEY`, and optionally the Supabase and geocoder variables from `.env.example`. Use a URL-encoded Atlas connection string and allow Vercel to access the Atlas cluster in MongoDB Network Access.
 
-Property photos and videos are uploaded from Express directly to the private Supabase Storage bucket named `property-media`; MongoDB stores only the storage path and media type. Set `SUPABASE_SERVICE_ROLE_KEY` and create that private bucket before deploying. The server returns one-hour signed URLs to authenticated users. Do not put the service-role key in `frontend/.env`.
+Property photos and videos upload directly from the browser to the private Supabase Storage bucket named `property-media`, using short-lived upload tokens created only after Express confirms the listing owner. This bypasses Vercel's 4.5 MB Function request-body limit. MongoDB stores only the storage path and media type; the server returns one-hour signed viewing URLs to authenticated users. Set `SUPABASE_SERVICE_ROLE_KEY` and `SUPABASE_STORAGE_BUCKET` on the server, then set matching `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, and `VITE_SUPABASE_STORAGE_BUCKET` for the frontend. Do not put the service-role key in `frontend/.env`.
 
 ## Hosted login (Supabase Auth)
 
