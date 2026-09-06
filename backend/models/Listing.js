@@ -8,7 +8,7 @@ const listingSchema = new mongoose.Schema({
   propertyRules: { petFriendly: { type: Boolean, default: false }, gatedSociety: { type: Boolean, default: false } },
   description: { type: String, trim: true, maxlength: 2000 },
   availableFrom: { type: Date, required: true, default: Date.now },
-  media: { type: [{ storagePath: String, url: String, type: { type: String, enum: ['image', 'video'], required: true } }], default: [] },
+  media: { type: [{ publicId: { type: String, required: true }, secureUrl: { type: String, required: true }, type: { type: String, enum: ['image', 'video'], required: true } }], default: [] },
   status: { type: String, enum: ['Available', 'Filled'], default: 'Available' }
 }, { timestamps: true });
 module.exports = mongoose.model('Listing', listingSchema);

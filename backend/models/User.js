@@ -7,7 +7,6 @@ const userSchema = new mongoose.Schema({
   encryptedPhone: { type: String, required: true, select: false },
   emailLookupHash: { type: String, required: true, unique: true, select: false },
   passwordHash: { type: String, select: false },
-  authProviderId: { type: String, unique: true, sparse: true, select: false },
   role: { type: String, enum: ['Host', 'Seeker', 'Both'], required: true },
   workRoutine: { type: String, enum: ['Fully Remote', 'Hybrid', 'Office Commute'] },
   professionTitle: String,

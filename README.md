@@ -1,5 +1,17 @@
 # Bengaluru VibeMatch
 
+## What it includes
+
+- Host, seeker, and combined accounts with persistent sessions.
+- Approximate-location property map and commute-distance search, without exposing an exact address.
+- Listings with availability dates, complete monthly costs, descriptions, and media.
+- A request-and-approval flow that unlocks contact details only after acceptance.
+- AES-256-GCM encryption for names, emails, and phone numbers in MongoDB.
+- Encrypted local email/password login with JWT-backed, persistent cookie sessions.
+- Cloudinary-hosted property photos and videos; MongoDB stores the verified HTTPS delivery URL and Cloudinary public ID.
+
+See [SOCIAL_LAUNCH.md](D:\xzx\Buildathon\SOCIAL_LAUNCH.md) for launch copy, feedback questions, and improvement ideas.
+
 Privacy-first MERN app for local flatmate matching. The request lifecycle is `Pending → Accepted/Rejected`; the only endpoint that decrypts PII is `GET /api/requests/:id/contact`, after authorization and acceptance checks.
 
 ## Run
@@ -32,12 +44,6 @@ Run `npm test` for encryption and credential-security tests, and `npm --prefix f
 
 ## Deploy to Vercel
 
-The repository includes [vercel.json](D:\xzx\Buildathon\vercel.json), a Vercel serverless entry point, and a cached MongoDB connection. Import the repository into Vercel (or run `vercel` from the project root), then configure these production environment variables: `MONGODB_URI`, `JWT_SECRET`, `PII_ENCRYPTION_KEY`, `PII_LOOKUP_KEY`, and optionally the Supabase and geocoder variables from `.env.example`. Use a URL-encoded Atlas connection string and allow Vercel to access the Atlas cluster in MongoDB Network Access.
+The repository includes [vercel.json](D:\xzx\Buildathon\vercel.json), a Vercel serverless entry point, and a cached MongoDB connection. Import the repository into Vercel with the **Root Directory** set to the repository root (`.`), not `frontend`. Configure `MONGODB_URI`, `JWT_SECRET`, `PII_ENCRYPTION_KEY`, `PII_LOOKUP_KEY`, and optionally `GEOCODER_USER_AGENT` from `.env.example`. Use a URL-encoded Atlas connection string and allow Vercel to access the Atlas cluster in MongoDB Network Access.
 
-Property photos and videos upload directly from the browser to the private Supabase Storage bucket named `property-media`, using short-lived upload tokens created only after Express confirms the listing owner. This bypasses Vercel's 4.5 MB Function request-body limit. MongoDB stores only the storage path and media type; the server returns one-hour signed viewing URLs to authenticated users. Set `SUPABASE_SERVICE_ROLE_KEY` and `SUPABASE_STORAGE_BUCKET` on the server, then set matching `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, and `VITE_SUPABASE_STORAGE_BUCKET` for the frontend. Do not put the service-role key in `frontend/.env`.
-
-## Hosted login (Supabase Auth)
-
-The app uses its existing local login until Supabase is configured. Create a Supabase project, enable Email authentication, then set the same project URL and **publishable** key in both `.env` and `frontend/.env` (copy `frontend/.env.example`). Never put a Supabase `service_role` key in the frontend.
-
-Once configured, the browser uses Supabase email/password authentication. On the first authenticated visit it calls `POST /api/auth/bootstrap`; the backend verifies the access token with Supabase, then creates the linked Mongo profile with encrypted name, email and phone. Subsequent API calls verify the Supabase token server-side before resolving that profile.
+Property media uploads go directly from the browser to Cloudinary using a short-lived signature created after Express verifies listing ownership. This bypasses Vercel's request-size limit. Set `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET` in Vercel; never expose the API secret to the frontend.

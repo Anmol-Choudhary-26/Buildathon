@@ -1,26 +1,14 @@
 const Listing = require('../models/Listing');
 const ConnectionRequest = require('../models/ConnectionRequest');
 const { listingProximity, distanceKm, estimatedRoadKm, knownAreaLocation } = require('../utils/proximity');
-const { getStorage, createSignedUpload, signedUrl, removeMedia } = require('../utils/supabaseStorage');
+const { configured: cloudinaryConfigured, credentials: cloudinaryCredentials, getCloudinary } = require('../utils/cloudinary');
 const crypto = require('crypto');
-const path = require('path');
-
-async function withMediaUrls(listing) {
-  const item = listing.toObject ? listing.toObject() : listing;
-  const media = await Promise.all((item.media || []).map(async asset => ({
-    ...asset,
-    // Legacy local media remains viewable in local development. New files use
-    // private, one-hour Supabase signed URLs.
-    url: asset.storagePath ? await signedUrl(asset.storagePath) : asset.url
-  })));
-  return { ...item, media };
-}
 
 exports.list = async (req, res, next) => {
   try {
     const listings = await Listing.find({ status: 'Available' }).populate('hostId', 'professionTitle workRoutine hobbyMatrix spotifyData').sort({ createdAt: -1 }).lean();
     const mine = new Map((await ConnectionRequest.find({ seekerId: req.user._id, listingId: { $in: listings.map(x => x._id) } }).select('listingId status').lean()).map(x => [String(x.listingId), { _id: x._id, status: x.status }]));
-    let responseListings = (await Promise.all(listings.map(withMediaUrls))).map(({ hostId, location, ...listing }) => ({
+    let responseListings = listings.map(({ hostId, location, ...listing }) => ({
       ...listing,
       host: hostId,
       proximity: listingProximity({ ...listing, location }),
@@ -48,7 +36,7 @@ exports.create = async (req, res, next) => {
 exports.mine = async (req, res, next) => {
   try {
     const listings = await Listing.find({ hostId: req.user._id }).sort({ createdAt: -1 }).lean();
-    res.json({ listings: await Promise.all(listings.map(withMediaUrls)) });
+    res.json({ listings });
   } catch (error) { next(error); }
 };
 
@@ -61,7 +49,7 @@ exports.update = async (req, res, next) => {
     if (!sameId(listing.hostId, req.user._id)) return res.status(403).json({ message: 'Only the property poster can update this listing.' });
     for (const field of editableFields) if (req.body[field] !== undefined) listing[field] = req.body[field];
     await listing.save();
-    res.json({ listing: await withMediaUrls(listing) });
+    res.json({ listing });
   } catch (error) { next(error); }
 };
 exports.remove = async (req, res, next) => {
@@ -69,50 +57,56 @@ exports.remove = async (req, res, next) => {
     const listing = await Listing.findById(req.params.id).select('hostId media');
     if (!listing) return res.status(404).json({ message: 'Property not found.' });
     if (!sameId(listing.hostId, req.user._id)) return res.status(403).json({ message: 'Only the property poster can delete this listing.' });
-    await Promise.all([removeMedia(listing.media.map(asset => asset.storagePath).filter(Boolean)), listing.deleteOne(), ConnectionRequest.deleteMany({ listingId: listing._id })]);
+    const cloudinary = getCloudinary();
+    if (cloudinary) await Promise.all(listing.media.map(asset => cloudinary.uploader.destroy(asset.publicId, { resource_type: asset.type, invalidate: true }).catch(() => null)));
+    await Promise.all([listing.deleteOne(), ConnectionRequest.deleteMany({ listingId: listing._id })]);
     res.status(204).end();
   } catch (error) { next(error); }
 };
 const allowedMedia = new Map([
-  ['image/jpeg', { extension: '.jpg', type: 'image' }], ['image/png', { extension: '.png', type: 'image' }],
-  ['image/webp', { extension: '.webp', type: 'image' }], ['video/mp4', { extension: '.mp4', type: 'video' }],
-  ['video/webm', { extension: '.webm', type: 'video' }]
+  ['image/jpeg', 'image'], ['image/png', 'image'], ['image/webp', 'image'], ['video/mp4', 'video'], ['video/webm', 'video']
 ]);
-const maxMediaBytes = 30 * 1024 * 1024;
+const maxMediaBytes = 100 * 1024 * 1024;
 
 exports.signMediaUploads = async (req, res, next) => {
   try {
-    if (!getStorage()) return res.status(503).json({ message: 'Media storage is not configured. Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY on the server.' });
-    const listing = await Listing.findById(req.params.id);
+    const cloudinary = getCloudinary();
+    if (!cloudinary || !cloudinaryConfigured()) return res.status(503).json({ message: 'Cloudinary media storage is not configured.' });
+    const cloudConfig = cloudinaryCredentials();
+    const listing = await Listing.findById(req.params.id).select('hostId media');
     if (!listing) return res.status(404).json({ message: 'Property not found.' });
     if (!sameId(listing.hostId, req.user._id)) return res.status(403).json({ message: 'Only the property poster can add media.' });
     const files = Array.isArray(req.body.files) ? req.body.files : [];
     if (!files.length || files.length > 8 || listing.media.length + files.length > 8) return res.status(400).json({ message: 'Choose up to 8 total JPG, PNG, WebP, MP4, or WebM files.' });
-    const uploads = await Promise.all(files.map(async file => {
-      const details = allowedMedia.get(file?.type);
-      if (!details || !Number.isFinite(file.size) || file.size < 1 || file.size > maxMediaBytes) throw new Error('Each media file must be an approved format and no larger than 30 MB.');
-      const suppliedExtension = path.extname(String(file.name || '')).toLowerCase();
-      const extension = suppliedExtension === details.extension ? suppliedExtension : details.extension;
-      const storagePath = `hosts/${req.user._id}/listings/${listing._id}/${crypto.randomUUID()}${extension}`;
-      const signed = await createSignedUpload(storagePath);
-      return { ...signed, type: details.type, contentType: file.type };
-    }));
+    const timestamp = Math.floor(Date.now() / 1000);
+    const uploads = files.map(file => {
+      const type = allowedMedia.get(file?.type);
+      if (!type || !Number.isFinite(file.size) || file.size < 1 || file.size > maxMediaBytes) throw new Error('Each media file must be an approved format and no larger than 100 MB.');
+      const publicId = `vibematch/${req.user._id}/${listing._id}/${crypto.randomUUID()}`;
+      const signature = cloudinary.utils.api_sign_request({ public_id: publicId, timestamp }, cloudConfig.apiSecret);
+      return { publicId, type, timestamp, signature, apiKey: cloudConfig.apiKey, cloudName: cloudConfig.cloudName };
+    });
     res.json({ uploads });
   } catch (error) { next(error); }
 };
 
 exports.completeMediaUploads = async (req, res, next) => {
   try {
+    const cloudinary = getCloudinary();
+    if (!cloudinary) return res.status(503).json({ message: 'Cloudinary media storage is not configured.' });
     const listing = await Listing.findById(req.params.id);
     if (!listing) return res.status(404).json({ message: 'Property not found.' });
     if (!sameId(listing.hostId, req.user._id)) return res.status(403).json({ message: 'Only the property poster can add media.' });
     const media = Array.isArray(req.body.media) ? req.body.media : [];
-    const prefix = `hosts/${req.user._id}/listings/${listing._id}/`;
-    if (!media.length || media.length > 8 || listing.media.length + media.length > 8 || media.some(asset => !asset?.storagePath?.startsWith(prefix) || !['image', 'video'].includes(asset.type))) return res.status(400).json({ message: 'Invalid media upload confirmation.' });
-    listing.media.push(...media.map(({ storagePath, type }) => ({ storagePath, type })));
+    const prefix = `vibematch/${req.user._id}/${listing._id}/`;
+    if (!media.length || media.length > 8 || listing.media.length + media.length > 8 || media.some(asset => !asset?.publicId?.startsWith(prefix) || !['image', 'video'].includes(asset.type))) return res.status(400).json({ message: 'Invalid media upload confirmation.' });
+    const verified = await Promise.all(media.map(async asset => {
+      const resource = await cloudinary.api.resource(asset.publicId, { resource_type: asset.type });
+      return { publicId: resource.public_id, secureUrl: resource.secure_url, type: resource.resource_type };
+    }));
+    listing.media.push(...verified);
     await listing.save();
-    const response = await withMediaUrls(listing);
-    res.status(201).json({ media: response.media });
+    res.status(201).json({ media: listing.media });
   } catch (error) { next(error); }
 };
 

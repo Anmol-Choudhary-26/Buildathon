@@ -2,3 +2,4 @@
 AggregateError [ECONNREFUSED]: 
     at internalConnectMultiple (node:net:1193:18)
     at afterConnectMultiple (node:net:1783:7)
+5:02:09 PM [vite] Pre-transform error: Failed to load url /src/supabase.js (resolved id: D:/xzx/Buildathon/frontend/src/supabase.js) in D:/xzx/Buildathon/frontend/src/App.jsx. Does the file exist?

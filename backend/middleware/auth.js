@@ -1,15 +1,13 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const { getSupabaseIdentity } = require('../utils/supabaseAuth');
 
 async function requireAuth(req, res, next) {
   try {
     const cookieToken = req.headers.cookie?.split(';').map(item => item.trim()).find(item => item.startsWith('vibematch_session='))?.slice('vibematch_session='.length);
     const token = req.headers.authorization?.replace(/^Bearer\s+/i, '') || cookieToken;
     if (!token) return res.status(401).json({ message: 'Authentication required.' });
-    const identity = await getSupabaseIdentity(token);
-    const payload = identity ? { sub: identity.id } : jwt.verify(token, process.env.JWT_SECRET);
-    const user = identity ? await User.findOne({ authProviderId: payload.sub }) : await User.findById(payload.sub);
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(payload.sub);
     if (!user) return res.status(401).json({ message: 'User no longer exists.' });
     req.user = user;
     next();
