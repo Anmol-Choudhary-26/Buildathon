@@ -1,0 +1,4 @@
+3:54:07 PM [vite] http proxy error: /api/auth/session
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)

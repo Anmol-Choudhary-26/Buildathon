@@ -16,7 +16,7 @@ npm --prefix frontend install
 npm run client
 ```
 
-Open `http://127.0.0.1:5173`. Vite proxies browser API calls to the backend on port 5000.
+Open `http://127.0.0.1:5173`. Vite reads the backend `PORT` from the root `.env` and proxies browser API calls there.
 
 ## API flow
 
@@ -29,6 +29,12 @@ Open `http://127.0.0.1:5173`. Vite proxies browser API calls to the backend on p
 Authentication expects a Bearer JWT with a `sub` equal to the Mongo user id. Keep `encrypted*` fields excluded from all public queries. To create users safely, use `User.createWithPII({ name, email, phone, role, ...profile })`; plaintext fields are virtuals and the pre-validation hook encrypts them before Mongo persistence.
 
 Run `npm test` for encryption and credential-security tests, and `npm --prefix frontend run build` to compile-check the UI.
+
+## Deploy to Vercel
+
+The repository includes [vercel.json](D:\xzx\Buildathon\vercel.json), a Vercel serverless entry point, and a cached MongoDB connection. Import the repository into Vercel (or run `vercel` from the project root), then configure these production environment variables: `MONGODB_URI`, `JWT_SECRET`, `PII_ENCRYPTION_KEY`, `PII_LOOKUP_KEY`, and optionally the Supabase and geocoder variables from `.env.example`. Use a URL-encoded Atlas connection string and allow Vercel to access the Atlas cluster in MongoDB Network Access.
+
+Property photos and videos are uploaded from Express directly to the private Supabase Storage bucket named `property-media`; MongoDB stores only the storage path and media type. Set `SUPABASE_SERVICE_ROLE_KEY` and create that private bucket before deploying. The server returns one-hour signed URLs to authenticated users. Do not put the service-role key in `frontend/.env`.
 
 ## Hosted login (Supabase Auth)
 

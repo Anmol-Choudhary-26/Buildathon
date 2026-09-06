@@ -5,4 +5,6 @@ router.post('/register', c.register);
 router.post('/login', c.login);
 router.post('/bootstrap', c.bootstrapSupabaseUser);
 router.get('/me', requireAuth, c.me);
+router.get('/session', requireAuth, c.me);
+router.post('/logout', requireAuth, c.logout);
 module.exports = router;

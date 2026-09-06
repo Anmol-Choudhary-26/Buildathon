@@ -1,0 +1,13 @@
+
+> vibematch-web@1.0.0 dev
+> vite --host 127.0.0.1
+
+
+  VITE v5.4.21  ready in 378 ms
+
+  ➜  Local:   http://127.0.0.1:5173/
+3:56:12 PM [vite] hmr update /src/styles.css
+3:57:13 PM [vite] hmr update /src/styles.css
+3:59:11 PM [vite] hmr update /src/App.jsx
+3:59:12 PM [vite] hmr update /src/components/LocationSearch.jsx
+4:07:25 PM [vite] hmr update /src/components/ListingMap.jsx
