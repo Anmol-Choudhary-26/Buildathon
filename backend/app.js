@@ -1,0 +1,13 @@
+const express = require('express');
+const requestRoutes = require('./routes/requestRoutes');
+const authRoutes = require('./routes/authRoutes');
+const listingRoutes = require('./routes/listingRoutes');
+const seekerProfileRoutes = require('./routes/seekerProfileRoutes');
+const app = express();
+app.use(express.json({ limit: '32kb' }));
+app.use('/api/auth', authRoutes);
+app.use('/api/listings', listingRoutes);
+app.use('/api/seeker-profile', seekerProfileRoutes);
+app.use('/api/requests', requestRoutes);
+app.use((err, req, res, next) => { console.error(err); res.status(500).json({ message: 'Unexpected server error.' }); });
+module.exports = app;

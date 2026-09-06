@@ -1,0 +1,15 @@
+{
+  "name": "bengaluru-vibematch",
+  "private": true,
+  "scripts": {
+    "server": "node backend/server.js",
+    "client": "npm --prefix frontend run dev",
+    "test": "node --test backend/tests/*.test.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.5.1"
+  }
+}
