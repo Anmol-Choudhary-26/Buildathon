@@ -1,14 +1,14 @@
-# Bengaluru VibeMatch launch kit
+# BLR Home Hunt launch kit
 
 ## One-line description
 
-Bengaluru VibeMatch helps people find a flatmate and a home that fits their lifestyle—without putting their phone number or exact address on the internet.
+BLR Home Hunt helps people find a flatmate and a home that fits their lifestyle—without putting their phone number or exact address on the internet.
 
 ## LinkedIn / Instagram post
 
 > Finding a flatmate in Bengaluru should feel less like scrolling through random posts and more like finding people and homes that fit your rhythm.
 >
-> Introducing **Bengaluru VibeMatch**: a hyper-local flatmate matching app built around lifestyle compatibility, commute-aware discovery, and privacy.
+> Introducing **BLR Home Hunt**: a hyper-local flatmate matching app built around lifestyle compatibility, commute-aware discovery, and privacy.
 >
 > - Search homes near your office, college, or any Bengaluru landmark
 > - Compare rent, maintenance, maid, and Wi-Fi costs clearly
@@ -24,11 +24,11 @@ Replace the final sentence with your live URL before publishing.
 
 ## Short WhatsApp / Telegram message
 
-> Looking for a flat or flatmate in Bengaluru? Try Bengaluru VibeMatch: search by area or commute, compare full monthly costs, and connect only after approval—so your phone number and exact location stay private. [your link]
+> Looking for a flat or flatmate in Bengaluru? Try BLR Home Hunt: search by area or commute, compare full monthly costs, and connect only after approval—so your phone number and exact location stay private. [your link]
 
 ## Product Hunt-style description
 
-Bengaluru VibeMatch is a privacy-first flatmate matching platform for Bengaluru. It combines neighbourhood-level map discovery, commute-distance search, lifestyle profiles, transparent costs, and an approval-based contact-sharing flow.
+BLR Home Hunt is a privacy-first flatmate matching platform for Bengaluru. It combines neighbourhood-level map discovery, commute-distance search, lifestyle profiles, transparent costs, and an approval-based contact-sharing flow.
 
 ## Ask users these questions
 

@@ -82,7 +82,7 @@ exports.signMediaUploads = async (req, res, next) => {
     const uploads = files.map(file => {
       const type = allowedMedia.get(file?.type);
       if (!type || !Number.isFinite(file.size) || file.size < 1 || file.size > maxMediaBytes) throw new Error('Each media file must be an approved format and no larger than 100 MB.');
-      const publicId = `vibematch/${req.user._id}/${listing._id}/${crypto.randomUUID()}`;
+      const publicId = `blr-home-hunt/${req.user._id}/${listing._id}/${crypto.randomUUID()}`;
       const signature = cloudinary.utils.api_sign_request({ public_id: publicId, timestamp }, cloudConfig.apiSecret);
       return { publicId, type, timestamp, signature, apiKey: cloudConfig.apiKey, cloudName: cloudConfig.cloudName };
     });
@@ -98,7 +98,7 @@ exports.completeMediaUploads = async (req, res, next) => {
     if (!listing) return res.status(404).json({ message: 'Property not found.' });
     if (!sameId(listing.hostId, req.user._id)) return res.status(403).json({ message: 'Only the property poster can add media.' });
     const media = Array.isArray(req.body.media) ? req.body.media : [];
-    const prefix = `vibematch/${req.user._id}/${listing._id}/`;
+    const prefix = `blr-home-hunt/${req.user._id}/${listing._id}/`;
     if (!media.length || media.length > 8 || listing.media.length + media.length > 8 || media.some(asset => !asset?.publicId?.startsWith(prefix) || !['image', 'video'].includes(asset.type))) return res.status(400).json({ message: 'Invalid media upload confirmation.' });
     const verified = await Promise.all(media.map(async asset => {
       const resource = await cloudinary.api.resource(asset.publicId, { resource_type: asset.type });
@@ -119,7 +119,7 @@ exports.geocode = async (req, res, next) => {
     if (cached && cached.expiresAt > Date.now()) return res.json({ location: cached.location });
     const knownArea = knownAreaLocation(query);
     if (knownArea) { geocodeCache.set(key, { location: knownArea, expiresAt: Date.now() + 86400000 }); return res.json({ location: knownArea }); }
-    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(`${query}, Bengaluru, India`)}`, { headers: { 'User-Agent': process.env.GEOCODER_USER_AGENT || 'BengaluruVibeMatch/1.0 contact@example.com', Accept: 'application/json' } });
+    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(`${query}, Bengaluru, India`)}`, { headers: { 'User-Agent': process.env.GEOCODER_USER_AGENT || 'BLRHomeHunt/1.0 contact@example.com', Accept: 'application/json' } });
     if (!response.ok) return res.status(502).json({ message: 'Location lookup is temporarily unavailable. Try a Bengaluru area such as Whitefield or Koramangala.' });
     const [result] = await response.json();
     if (!result) return res.status(404).json({ message: 'Location not found. Try a Bengaluru landmark or area.' });

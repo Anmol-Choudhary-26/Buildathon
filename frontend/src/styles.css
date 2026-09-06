@@ -22,3 +22,7 @@ h1,h2,h3,h4,p { margin-top:0; } h2 { margin:34px 0 8px; font-family:"Playfair Di
 .auth { display:grid; place-content:center; min-height:100vh; padding:30px 0; }.auth>h1 { margin:0; color:var(--forest-dark); font-family:"Playfair Display",serif; font-size:clamp(2.3rem,6vw,4rem); letter-spacing:-.06em; }.auth>p { max-width:470px; margin:9px 0 22px; color:var(--muted); font-size:1.05rem; }.auth form { max-width:520px; padding:28px; }.auth form h2 { margin:0 0 18px; }.auth .link-button { margin-top:12px; padding:6px 0; color:var(--forest); background:transparent; box-shadow:none; }
 
 @media (max-width:700px) { main { width:min(100% - 24px,1180px); padding-top:12px; } main>header { padding:14px; border-radius:14px; } main>header h1::after { display:none; }.listing-form { grid-template-columns:1fr; padding:17px; }.listing-map-section { padding:13px; }.listing-map { height:340px; }.property-media img,.property-media video { height:175px; }.modal { padding:20px; }.auth { padding-inline:16px; }.auth form { padding:20px; } }
+
+/* The header uses the BLR Home Hunt brand while preserving the existing header structure. */
+main > header h1 { font-size:0; }
+main > header h1::before { content:'BLR Home Hunt'; font-family:var(--display); font-size:clamp(1.45rem,3vw,2.1rem); }

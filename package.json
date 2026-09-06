@@ -1,5 +1,5 @@
 {
-  "name": "bengaluru-vibematch",
+  "name": "blr-home-hunt",
   "private": true,
   "scripts": {
     "server": "node backend/server.js",
